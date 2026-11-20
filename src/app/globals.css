@@ -1,0 +1,159 @@
+/* Leva Já Desapegos — tema da marca (brandkit/cores.css) */
+:root {
+  --verde: #2f6b4f;
+  --laranja: #c2440f;
+  --laranja-luz: #f27a45;
+  --escuro: #1f2a24;
+  --creme: #fbf7f0;
+  --areia: #ede5d8;
+  --erro: #a3260c;
+  --cinza: #5d655f;
+  --raio: 14px;
+  --sombra: 0 1px 2px rgb(31 42 36 / 0.08), 0 4px 14px rgb(31 42 36 / 0.06);
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--creme);
+  color: var(--escuro);
+  font-family: var(--font-texto), system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.45;
+  padding-bottom: calc(72px + env(safe-area-inset-bottom));
+}
+h1, h2, h3, .titulo { font-family: var(--font-titulo), system-ui, sans-serif; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; margin: 0 0 0.5rem; }
+h1 { font-size: 1.75rem; }
+h2 { font-size: 1.3rem; }
+h3 { font-size: 1.08rem; }
+a { color: inherit; }
+img { max-width: 100%; display: block; }
+
+.container { max-width: 960px; margin: 0 auto; padding: 16px; }
+.pilha > * + * { margin-top: 12px; }
+.linha { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.entre { justify-content: space-between; }
+.grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+.grade-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.mudo { color: var(--cinza); font-size: 0.9rem; }
+.pequeno { font-size: 0.82rem; }
+.centro { text-align: center; }
+
+/* ---------- topo ---------- */
+.topo { position: sticky; top: 0; z-index: 10; background: var(--creme); border-bottom: 1px solid var(--areia); }
+.topo .container { display: flex; align-items: center; justify-content: space-between; padding-block: 10px; }
+.topo img { height: 34px; width: auto; }
+.topo.gestao { background: var(--escuro); color: var(--creme); border: 0; }
+
+/* ---------- navegação inferior (mobile-first) ---------- */
+.nav-baixo {
+  position: fixed; inset: auto 0 0 0; z-index: 20; background: #fff; border-top: 1px solid var(--areia);
+  display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; padding-bottom: env(safe-area-inset-bottom);
+}
+.nav-baixo a { text-decoration: none; text-align: center; padding: 8px 2px 10px; font-size: 0.75rem; font-weight: 700; color: var(--cinza); }
+.nav-baixo a span { display: block; font-size: 1.25rem; line-height: 1.3; }
+.nav-baixo a[aria-current="page"] { color: var(--laranja); }
+.nav-baixo.gestao { background: var(--escuro); border-color: #000; }
+.nav-baixo.gestao a { color: #c9cfc9; }
+.nav-baixo.gestao a[aria-current="page"] { color: var(--laranja-luz); }
+
+/* ---------- cartões ---------- */
+.cartao { background: #fff; border-radius: var(--raio); box-shadow: var(--sombra); padding: 14px; }
+.cartao.areia { background: var(--areia); box-shadow: none; }
+.item-card { background: #fff; border-radius: var(--raio); overflow: hidden; box-shadow: var(--sombra); text-decoration: none; display: flex; flex-direction: column; }
+.item-card .foto { aspect-ratio: 1; background: var(--areia); object-fit: cover; width: 100%; }
+.item-card .corpo { padding: 10px; display: grid; gap: 2px; }
+.item-card .nome { font-weight: 700; font-size: 0.92rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------- preço ---------- */
+.preco { font-family: var(--font-titulo), sans-serif; font-weight: 800; font-size: 1.35rem; color: var(--laranja); }
+.preco.grande { font-size: 2.2rem; }
+.riscado { text-decoration: line-through; color: var(--cinza); font-size: 0.85rem; }
+.baixa { font-size: 0.8rem; color: var(--verde); font-weight: 700; }
+
+/* ---------- selos ---------- */
+.selo { display: inline-flex; align-items: center; gap: 4px; font-size: 0.72rem; font-weight: 800; padding: 3px 8px; border-radius: 999px; background: var(--verde); color: #fff; text-transform: uppercase; letter-spacing: 0.03em; }
+.selo.laranja { background: var(--laranja); }
+.selo.defeito { background: #fff3cd; color: #7a4b00; border: 1px solid #f0c36d; }
+.selo.escuro { background: var(--escuro); }
+.selo.claro { background: var(--areia); color: var(--escuro); }
+
+/* ---------- botões e formulários ---------- */
+.botao {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 16px;
+  border-radius: 12px; border: 0; background: var(--laranja); color: #fff; font: inherit; font-weight: 800; white-space: nowrap; text-decoration: none; cursor: pointer;
+}
+.botao:disabled, .botao[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; }
+.botao.verde { background: var(--verde); }
+.botao.escuro { background: var(--escuro); }
+.botao.contorno { background: transparent; color: var(--escuro); border: 2px solid var(--escuro); }
+.botao.perigo { background: var(--erro); }
+.botao.bloco { width: 100%; }
+.botao.peq { min-height: 36px; padding: 0 12px; font-size: 0.88rem; border-radius: 10px; }
+
+label { display: grid; gap: 4px; font-weight: 700; font-size: 0.9rem; }
+input, select, textarea {
+  font: inherit; font-weight: 400; padding: 12px; border-radius: 10px; border: 1.5px solid #cfc6b6; background: #fff; color: var(--escuro); width: 100%;
+}
+input:focus, select:focus, textarea:focus { outline: 3px solid rgb(194 68 15 / 0.25); border-color: var(--laranja); }
+input[type="checkbox"], input[type="radio"] { width: 22px; height: 22px; accent-color: var(--laranja); }
+.check { display: flex; gap: 10px; align-items: flex-start; font-weight: 400; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 999px; border: 1.5px solid #cfc6b6; background: #fff; font-weight: 700; font-size: 0.88rem; text-decoration: none; cursor: pointer; }
+.chip[aria-pressed="true"], .chip.ativo, .chip:has(input:checked) { background: var(--escuro); border-color: var(--escuro); color: #fff; }
+.chip input { display: none; }
+.erro { color: var(--erro); font-weight: 700; font-size: 0.88rem; }
+.ok { color: var(--verde); font-weight: 700; }
+.alerta { background: #fff3cd; border: 1px solid #f0c36d; border-radius: 12px; padding: 12px; }
+.sucesso { background: #e5f2ea; border: 1px solid #9cc9ae; border-radius: 12px; padding: 12px; }
+
+/* ---------- herói ---------- */
+.heroi { background: var(--escuro); color: var(--creme); border-radius: 22px; padding: 28px 20px; }
+.heroi h1 { font-size: 2.3rem; }
+.heroi .destaque { color: var(--laranja-luz); }
+
+/* ---------- linha do tempo ---------- */
+.tempo { list-style: none; padding: 0; margin: 0; display: grid; gap: 0; }
+.tempo li { display: grid; grid-template-columns: 18px 1fr auto; gap: 10px; align-items: center; padding: 8px 0; position: relative; }
+.tempo li::before { content: ""; width: 12px; height: 12px; border-radius: 50%; background: var(--areia); border: 2px solid var(--cinza); }
+.tempo li.passou::before { background: var(--cinza); }
+.tempo li.agora::before { background: var(--laranja); border-color: var(--laranja); box-shadow: 0 0 0 4px rgb(194 68 15 / 0.2); }
+.tempo li.agora { font-weight: 800; }
+
+/* ---------- tabelas ---------- */
+.tabela { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.tabela th, .tabela td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--areia); vertical-align: top; }
+.tabela th { font-size: 0.75rem; text-transform: uppercase; color: var(--cinza); }
+.rolagem { overflow-x: auto; }
+
+.kpis { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.kpi { background: #fff; border-radius: var(--raio); padding: 12px; box-shadow: var(--sombra); }
+.kpi .valor { font-family: var(--font-titulo), sans-serif; font-weight: 800; font-size: 1.4rem; }
+.kpi .rotulo { font-size: 0.78rem; color: var(--cinza); font-weight: 700; }
+.barra { height: 10px; border-radius: 99px; background: var(--areia); overflow: hidden; }
+.barra > i { display: block; height: 100%; background: var(--verde); }
+.barra.cheia > i { background: var(--erro); }
+
+.galeria { display: flex; gap: 8px; overflow-x: auto; scroll-snap-type: x mandatory; }
+.galeria img { flex: 0 0 88%; aspect-ratio: 1; object-fit: cover; border-radius: var(--raio); scroll-snap-align: center; background: var(--areia); }
+
+.codigo-grande { font-family: ui-monospace, monospace; font-size: 2rem; font-weight: 800; letter-spacing: 0.2em; }
+
+/* ---------- etiqueta térmica (50 × 30 mm) ---------- */
+@media print {
+  body { padding: 0; background: #fff; }
+  .nao-imprimir, .topo, .nav-baixo { display: none !important; }
+  @page { size: 50mm 30mm; margin: 0; }
+}
+.etiqueta { width: 50mm; height: 30mm; background: #fff; color: #000; display: grid; grid-template-columns: 24mm 1fr; gap: 1.5mm; padding: 2mm; font-family: Arial, sans-serif; border: 1px dashed #999; }
+.etiqueta .qr { width: 24mm; height: 24mm; }
+.etiqueta .cod { font-size: 13pt; font-weight: 900; letter-spacing: 0.02em; }
+.etiqueta .nome { font-size: 7pt; line-height: 1.15; max-height: 3.5em; overflow: hidden; }
+.etiqueta .selo-et { width: 18mm; }
+@media print { .etiqueta { border: 0; } }
+
+@media (min-width: 760px) {
+  .grade { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+  .galeria img { flex-basis: 48%; }
+}
