@@ -12,6 +12,19 @@ import { enviarCodigo } from "@/lib/mensagens";
 
 export type EstadoConta = { erro?: string; ok?: string } | undefined;
 
+type ErroAuth = { message?: string; status?: number; code?: string } | null | undefined;
+
+/** Traduz os erros do Neon Auth para mensagens úteis (e registra o original no log da Vercel). */
+function mensagemAuth(e: ErroAuth, padrao: string): string {
+  console.warn("[auth]", e?.status, e?.code, e?.message);
+  const m = `${e?.code ?? ""} ${e?.message ?? ""}`.toLowerCase();
+  if (m.includes("origin")) return `Abra o sistema pelo endereço oficial (${process.env.NEXT_PUBLIC_APP_URL ?? "leva-ja-desapegos.vercel.app"}) e tente de novo.`;
+  if (m.includes("already") || m.includes("exist")) return "Já existe uma conta com este e-mail. Use Entrar.";
+  if (m.includes("password") && (m.includes("short") || m.includes("weak"))) return "Senha fraca: use pelo menos 8 caracteres.";
+  if (m.includes("network") || e?.status === 502) return "Serviço de login indisponível agora. Tente em instantes.";
+  return padrao;
+}
+
 const destinoSeguro = (v: FormDataEntryValue | null) => {
   const s = String(v ?? "/");
   return s.startsWith("/") && !s.startsWith("//") ? s : "/";
@@ -22,7 +35,7 @@ export async function entrar(_: EstadoConta, form: FormData): Promise<EstadoCont
     email: String(form.get("email") ?? "").trim().toLowerCase(),
     password: String(form.get("senha") ?? ""),
   });
-  if (error) return { erro: "E-mail ou senha incorretos." };
+  if (error) return { erro: mensagemAuth(error, "E-mail ou senha incorretos.") };
   redirect(destinoSeguro(form.get("voltar")));
 }
 
@@ -34,7 +47,7 @@ export async function cadastrar(_: EstadoConta, form: FormData): Promise<EstadoC
     email: String(form.get("email") ?? "").trim().toLowerCase(),
     password: senha,
   });
-  if (error) return { erro: error.message ?? "Não foi possível criar a conta." };
+  if (error) return { erro: mensagemAuth(error, `Não foi possível criar a conta (${error.message ?? "erro desconhecido"}).`) };
   redirect(`/conta/cadastro?voltar=${encodeURIComponent(destinoSeguro(form.get("voltar")))}`);
 }
 
