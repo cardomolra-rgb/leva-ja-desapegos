@@ -8,7 +8,7 @@ import { comoServico, comoUsuario, uma } from "@/lib/db";
 import { exigirLogin, origemRequisicao } from "@/lib/sessao";
 import { registrarEvento } from "@/lib/eventos";
 import { salvarArquivo } from "@/lib/storage";
-import { enviarCodigo } from "@/lib/mensagens";
+import { enviarCodigo, envioReal } from "@/lib/mensagens";
 
 export type EstadoConta = { erro?: string; ok?: string } | undefined;
 
@@ -75,32 +75,42 @@ export async function salvarDadosEnviarCodigo(_: EstadoConta, form: FormData): P
   const { perfil } = await exigirLogin();
   const cpf = String(form.get("cpf") ?? "").replace(/\D/g, "");
   const telefone = String(form.get("telefone") ?? "").replace(/\D/g, "").replace(/^55(?=\d{10,11}$)/, "");
-  const canal = form.get("canal") === "sms" ? "sms" : "whatsapp";
+  const canal = form.get("canal") === "whatsapp" ? "whatsapp" : "sms";
   if (!(await cpfValido(cpf))) return { erro: "CPF inválido." };
   if (!/^\d{10,11}$/.test(telefone)) return { erro: "Telefone com DDD, só números." };
 
-  const res = await comoServico(async (db) => {
+  const res = await comoServico(async (db): Promise<{ erro: string } | { codigo: string }> => {
     const dono = await uma<{ id: string }>(db, "select id from perfis where cpf = $1 and id <> $2", [cpf, perfil.id]);
-    if (dono) return "Este CPF já está cadastrado em outra conta.";
-    if (perfil.cpf && perfil.cpf !== cpf) return "O CPF não pode ser alterado. Procure a loja.";
+    if (dono) return { erro: "Este CPF já está cadastrado em outra conta." };
+    if (perfil.cpf && perfil.cpf !== cpf) return { erro: "O CPF não pode ser alterado. Procure a loja." };
     const recentes = await uma<{ n: number }>(
       db, "select count(*)::int n from codigos_verificacao where perfil_id = $1 and criado_em > now() - interval '15 minutes'", [perfil.id],
     );
-    if ((recentes?.n ?? 0) >= 3) return "Muitas tentativas. Aguarde 15 minutos.";
+    if ((recentes?.n ?? 0) >= 3) return { erro: "Muitas tentativas. Aguarde 15 minutos." };
     const codigo = String(randomInt(0, 1_000_000)).padStart(6, "0");
     await db.query("update perfis set cpf = $2, telefone = $3, chave_pix = coalesce(chave_pix, $2) where id = $1", [perfil.id, cpf, telefone]);
     await db.query(
       "insert into codigos_verificacao (perfil_id, canal, destino, codigo_hash, expira_em) values ($1,$2,$3,$4, now() + interval '10 minutes')",
       [perfil.id, canal, telefone, hash(`${perfil.id}:${codigo}`)],
     );
-    if (modoTeste() && (process.env.MESSAGING_PROVIDER ?? "console") === "console") return `TESTE:${codigo}`;
-    await enviarCodigo(telefone, codigo);
-    return null;
+    return { codigo };
   });
-  if (res?.startsWith("TESTE:")) return { ok: `Ambiente de testes — seu código é ${res.slice(6)}` };
-  if (res) return { erro: res };
+  if ("erro" in res) return { erro: res.erro };
+
+  // sem provedor de SMS/WhatsApp configurado, o ambiente de testes mostra o código na tela
+  if (!envioReal(canal)) {
+    if (modoTeste()) return { ok: `Ambiente de testes — seu código é ${res.codigo}` };
+    return { erro: "Envio de código indisponível no momento. Procure a loja." };
+  }
+  let usado: string;
+  try {
+    usado = await enviarCodigo(telefone, res.codigo, canal);
+  } catch (e) {
+    console.error("[código] falha no envio", e);
+    return { erro: "Não conseguimos enviar o código. Confira o número e tente de novo em instantes." };
+  }
   revalidatePath("/conta/cadastro");
-  return { ok: "Código enviado! Confira seu " + (canal === "sms" ? "SMS" : "WhatsApp") + "." };
+  return { ok: `Código enviado por ${usado === "whatsapp" ? "WhatsApp" : "SMS"} para o final ${telefone.slice(-4)}.` };
 }
 
 export async function confirmarCodigo(_: EstadoConta, form: FormData): Promise<EstadoConta> {

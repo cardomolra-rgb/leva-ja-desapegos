@@ -1,36 +1,103 @@
 import "server-only";
 
 /**
- * Envio de mensagens de mão única (código de verificação e avisos).
- * Fase 1: código por WhatsApp (modelo de autenticação) ou registro no log em desenvolvimento.
- * Fase 2: modelos de aviso (aprovação, venda, repasse, reserva, fim de prazo, desejo encontrado).
+ * Envio do código de verificação do celular (mão única).
+ *
+ * SMS — SMS_PROVIDER:
+ *   - "twilio": TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM (número Twilio, ex.: +15551234567)
+ *   - "zenvia": ZENVIA_API_TOKEN, ZENVIA_FROM (remetente cadastrado na Zenvia)
+ * WhatsApp — WHATSAPP_TOKEN e WHATSAPP_PHONE_NUMBER_ID (WhatsApp Business Cloud API,
+ *   com o modelo de autenticação "codigo_verificacao" aprovado pela Meta).
+ *
+ * Sem nenhum provedor configurado, o código vai só para o log (desenvolvimento) e,
+ * com MODO_TESTE=1, aparece na tela.
  */
-export async function enviarCodigo(telefone: string, codigo: string): Promise<void> {
-  const provedor = process.env.MESSAGING_PROVIDER ?? "console";
-  if (provedor === "console") {
-    console.info(`[código de verificação] ${telefone}: ${codigo}`);
+export type Canal = "sms" | "whatsapp";
+
+const e164 = (tel: string) => `+55${tel.replace(/\D/g, "").replace(/^55(?=\d{10,11}$)/, "")}`;
+const texto = (codigo: string) => `Leva Já: seu código de verificação é ${codigo}. Vale por 10 minutos. Não compartilhe.`;
+
+export function smsConfigurado() {
+  const p = process.env.SMS_PROVIDER;
+  if (p === "twilio") return !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_FROM);
+  if (p === "zenvia") return !!(process.env.ZENVIA_API_TOKEN && process.env.ZENVIA_FROM);
+  return false;
+}
+
+export function whatsappConfigurado() {
+  return !!(process.env.WHATSAPP_TOKEN && process.env.WHATSAPP_PHONE_NUMBER_ID);
+}
+
+/** Algum provedor real atende este canal (diretamente ou como alternativa)? */
+export function envioReal(canal: Canal) {
+  return canal === "whatsapp" ? whatsappConfigurado() || smsConfigurado() : smsConfigurado() || whatsappConfigurado();
+}
+
+async function enviarSms(telefone: string, codigo: string) {
+  const para = e164(telefone);
+  if (process.env.SMS_PROVIDER === "twilio") {
+    const sid = process.env.TWILIO_ACCOUNT_SID!;
+    const r = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${Buffer.from(`${sid}:${process.env.TWILIO_AUTH_TOKEN}`).toString("base64")}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({ To: para, From: process.env.TWILIO_FROM!, Body: texto(codigo) }),
+    });
+    if (!r.ok) throw new Error(`Twilio: ${r.status} ${await r.text()}`);
     return;
   }
-  if (provedor === "whatsapp") {
-    const r = await fetch(`https://graph.facebook.com/v21.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`, {
+  if (process.env.SMS_PROVIDER === "zenvia") {
+    const r = await fetch("https://api.zenvia.com/v2/channels/sms/messages", {
       method: "POST",
-      headers: { Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`, "Content-Type": "application/json" },
+      headers: { "X-API-TOKEN": process.env.ZENVIA_API_TOKEN!, "Content-Type": "application/json" },
       body: JSON.stringify({
-        messaging_product: "whatsapp",
-        to: `55${telefone.replace(/^55/, "")}`,
-        type: "template",
-        template: {
-          name: "codigo_verificacao",
-          language: { code: "pt_BR" },
-          components: [
-            { type: "body", parameters: [{ type: "text", text: codigo }] },
-            { type: "button", sub_type: "url", index: "0", parameters: [{ type: "text", text: codigo }] },
-          ],
-        },
+        from: process.env.ZENVIA_FROM,
+        to: para.replace("+", ""),
+        contents: [{ type: "text", text: texto(codigo) }],
       }),
     });
-    if (!r.ok) throw new Error(`WhatsApp: ${r.status} ${await r.text()}`);
+    if (!r.ok) throw new Error(`Zenvia: ${r.status} ${await r.text()}`);
     return;
   }
-  throw new Error(`Provedor de mensagens desconhecido: ${provedor}`);
+  throw new Error("SMS_PROVIDER não configurado");
+}
+
+async function enviarWhatsapp(telefone: string, codigo: string) {
+  const r = await fetch(`https://graph.facebook.com/v21.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      to: e164(telefone).replace("+", ""),
+      type: "template",
+      template: {
+        name: "codigo_verificacao",
+        language: { code: "pt_BR" },
+        components: [
+          { type: "body", parameters: [{ type: "text", text: codigo }] },
+          { type: "button", sub_type: "url", index: "0", parameters: [{ type: "text", text: codigo }] },
+        ],
+      },
+    }),
+  });
+  if (!r.ok) throw new Error(`WhatsApp: ${r.status} ${await r.text()}`);
+}
+
+/** Envia pelo canal escolhido; se ele não estiver configurado, usa o outro. Retorna o canal usado. */
+export async function enviarCodigo(telefone: string, codigo: string, canal: Canal = "sms"): Promise<Canal | "log"> {
+  const ordem: Canal[] = canal === "whatsapp" ? ["whatsapp", "sms"] : ["sms", "whatsapp"];
+  for (const c of ordem) {
+    if (c === "sms" && smsConfigurado()) {
+      await enviarSms(telefone, codigo);
+      return "sms";
+    }
+    if (c === "whatsapp" && whatsappConfigurado()) {
+      await enviarWhatsapp(telefone, codigo);
+      return "whatsapp";
+    }
+  }
+  console.info(`[código de verificação] ${telefone}: ${codigo}`);
+  return "log";
 }

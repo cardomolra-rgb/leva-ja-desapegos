@@ -28,8 +28,8 @@ export default async function CompletarCadastro({ searchParams }: { searchParams
               <label>CPF<input name="cpf" inputMode="numeric" defaultValue={perfil.cpf ?? ""} required placeholder="000.000.000-00" /></label>
               <label>Celular com DDD<input name="telefone" inputMode="tel" defaultValue={perfil.telefone ?? ""} required placeholder="63 99999-9999" /></label>
               <div className="chips">
-                <label className="chip"><input type="radio" name="canal" value="whatsapp" defaultChecked />WhatsApp</label>
-                <label className="chip"><input type="radio" name="canal" value="sms" />SMS</label>
+                <label className="chip"><input type="radio" name="canal" value="sms" defaultChecked />SMS</label>
+                <label className="chip"><input type="radio" name="canal" value="whatsapp" />WhatsApp</label>
               </div>
               <p className="mudo pequeno">Seus repasses em Pix vão sempre para a chave do seu CPF.</p>
             </FormSimples>
