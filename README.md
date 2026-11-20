@@ -64,7 +64,7 @@ npm test
 ### 2. Vercel
 1. Importe o repositório; framework Next.js; região `gru1` (já em `vercel.json`).
 2. Variáveis de ambiente (ver `.env.example`):
-   - **Production**: `DATABASE_URL` (main, com `-pooler`), `NEON_AUTH_BASE_URL`, `NEON_AUTH_COOKIE_SECRET`, `S3_*`, `PAYMENT_GATEWAY=mercadopago`, `MERCADOPAGO_ACCESS_TOKEN`, `MERCADOPAGO_WEBHOOK_SECRET`, `SMS_PROVIDER` + credenciais (Twilio ou Zenvia) e/ou `WHATSAPP_*`, `CRON_SECRET`, `NEXT_PUBLIC_APP_URL`, `GESTORES_INICIAIS`.
+   - **Production**: `DATABASE_URL` (main, com `-pooler`), `NEON_AUTH_BASE_URL`, `NEON_AUTH_COOKIE_SECRET`, `S3_*`, `PAYMENT_GATEWAY=mercadopago`, `MERCADOPAGO_ACCESS_TOKEN`, `MERCADOPAGO_WEBHOOK_SECRET`, `SMS_PROVIDER` + credenciais (Twilio, Zenvia ou Infobip) e/ou `WHATSAPP_*`, `CRON_SECRET`, `NEXT_PUBLIC_APP_URL`, `GESTORES_INICIAIS`.
    - **Preview/Development**: as mesmas, apontando para o branch **dev** e `PAYMENT_GATEWAY=mock`.
 3. Crons (em `vercel.json`):
    - `/api/cron/queda-precos` — todo dia 06:05 UTC (03:05 em Araguaína): queda, vencimento, doação e reservas vencidas.

@@ -6,6 +6,7 @@ import "server-only";
  * SMS — SMS_PROVIDER:
  *   - "twilio": TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM (número Twilio, ex.: +15551234567)
  *   - "zenvia": ZENVIA_API_TOKEN, ZENVIA_FROM (remetente cadastrado na Zenvia)
+ *   - "infobip": INFOBIP_API_KEY, INFOBIP_BASE_URL (ex.: https://xxxxx.api.infobip.com), INFOBIP_FROM
  * WhatsApp — WHATSAPP_TOKEN e WHATSAPP_PHONE_NUMBER_ID (WhatsApp Business Cloud API,
  *   com o modelo de autenticação "codigo_verificacao" aprovado pela Meta).
  *
@@ -21,6 +22,7 @@ export function smsConfigurado() {
   const p = process.env.SMS_PROVIDER;
   if (p === "twilio") return !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_FROM);
   if (p === "zenvia") return !!(process.env.ZENVIA_API_TOKEN && process.env.ZENVIA_FROM);
+  if (p === "infobip") return !!(process.env.INFOBIP_API_KEY && process.env.INFOBIP_BASE_URL);
   return false;
 }
 
@@ -59,6 +61,19 @@ async function enviarSms(telefone: string, codigo: string) {
       }),
     });
     if (!r.ok) throw new Error(`Zenvia: ${r.status} ${await r.text()}`);
+    return;
+  }
+  if (process.env.SMS_PROVIDER === "infobip") {
+    // Infobip SMS API v2 ("text/advanced"), autenticação "App <chave>"
+    const base = process.env.INFOBIP_BASE_URL!.replace(/\/+$/, "").replace(/^(?!https?:\/\/)/, "https://");
+    const r = await fetch(`${base}/sms/2/text/advanced`, {
+      method: "POST",
+      headers: { Authorization: `App ${process.env.INFOBIP_API_KEY}`, "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({
+        messages: [{ from: process.env.INFOBIP_FROM || "LevaJa", destinations: [{ to: para.replace("+", "") }], text: texto(codigo) }],
+      }),
+    });
+    if (!r.ok) throw new Error(`Infobip: ${r.status} ${await r.text()}`);
     return;
   }
   throw new Error("SMS_PROVIDER não configurado");
