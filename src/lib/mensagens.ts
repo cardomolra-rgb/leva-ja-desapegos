@@ -7,8 +7,11 @@ import "server-only";
  *   - "twilio": TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM (número Twilio, ex.: +15551234567)
  *   - "zenvia": ZENVIA_API_TOKEN, ZENVIA_FROM (remetente cadastrado na Zenvia)
  *   - "infobip": INFOBIP_API_KEY, INFOBIP_BASE_URL (ex.: https://xxxxx.api.infobip.com), INFOBIP_FROM
- * WhatsApp — WHATSAPP_TOKEN e WHATSAPP_PHONE_NUMBER_ID (WhatsApp Business Cloud API,
- *   com o modelo de autenticação "codigo_verificacao" aprovado pela Meta).
+ * WhatsApp — WHATSAPP_PROVIDER:
+ *   - "infobip": INFOBIP_API_KEY, INFOBIP_BASE_URL, INFOBIP_WHATSAPP_FROM (número remetente),
+ *     INFOBIP_WHATSAPP_TEMPLATE (modelo aprovado; o código vai no 1º campo) e INFOBIP_WHATSAPP_LANG
+ *   - "meta" (padrão): WHATSAPP_TOKEN e WHATSAPP_PHONE_NUMBER_ID (WhatsApp Business Cloud API,
+ *     com o modelo de autenticação "codigo_verificacao" aprovado pela Meta).
  *
  * Sem nenhum provedor configurado, o código vai só para o log (desenvolvimento) e,
  * com MODO_TESTE=1, aparece na tela.
@@ -26,7 +29,12 @@ export function smsConfigurado() {
   return false;
 }
 
+const infobipBase = () =>
+  (process.env.INFOBIP_BASE_URL ?? "").replace(/\/+$/, "").replace(/^(?!https?:\/\/)/, "https://");
+
 export function whatsappConfigurado() {
+  if (process.env.WHATSAPP_PROVIDER === "infobip")
+    return !!(process.env.INFOBIP_API_KEY && process.env.INFOBIP_BASE_URL && process.env.INFOBIP_WHATSAPP_FROM && process.env.INFOBIP_WHATSAPP_TEMPLATE);
   return !!(process.env.WHATSAPP_TOKEN && process.env.WHATSAPP_PHONE_NUMBER_ID);
 }
 
@@ -65,8 +73,7 @@ async function enviarSms(telefone: string, codigo: string) {
   }
   if (process.env.SMS_PROVIDER === "infobip") {
     // Infobip SMS API v2 ("text/advanced"), autenticação "App <chave>"
-    const base = process.env.INFOBIP_BASE_URL!.replace(/\/+$/, "").replace(/^(?!https?:\/\/)/, "https://");
-    const r = await fetch(`${base}/sms/2/text/advanced`, {
+    const r = await fetch(`${infobipBase()}/sms/2/text/advanced`, {
       method: "POST",
       headers: { Authorization: `App ${process.env.INFOBIP_API_KEY}`, "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify({
@@ -80,6 +87,28 @@ async function enviarSms(telefone: string, codigo: string) {
 }
 
 async function enviarWhatsapp(telefone: string, codigo: string) {
+  if (process.env.WHATSAPP_PROVIDER === "infobip") {
+    // Infobip WhatsApp: mensagem por modelo aprovado, com o código no primeiro campo do corpo
+    const r = await fetch(`${infobipBase()}/whatsapp/1/message/template`, {
+      method: "POST",
+      headers: { Authorization: `App ${process.env.INFOBIP_API_KEY}`, "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({
+        messages: [
+          {
+            from: process.env.INFOBIP_WHATSAPP_FROM,
+            to: e164(telefone).replace("+", ""),
+            content: {
+              templateName: process.env.INFOBIP_WHATSAPP_TEMPLATE,
+              templateData: { body: { placeholders: [codigo] } },
+              language: process.env.INFOBIP_WHATSAPP_LANG || "pt_BR",
+            },
+          },
+        ],
+      }),
+    });
+    if (!r.ok) throw new Error(`Infobip WhatsApp: ${r.status} ${await r.text()}`);
+    return;
+  }
   const r = await fetch(`https://graph.facebook.com/v21.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`, {
     method: "POST",
     headers: { Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`, "Content-Type": "application/json" },
