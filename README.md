@@ -68,7 +68,7 @@ npm test
    - **Preview/Development**: as mesmas, apontando para o branch **dev** e `PAYMENT_GATEWAY=mock`.
 3. Crons (em `vercel.json`):
    - `/api/cron/queda-precos` — todo dia 06:05 UTC (03:05 em Araguaína): queda, vencimento, doação e reservas vencidas.
-   - `/api/cron/prazos` — a cada 15 min: Pix não pago e reservas não retiradas. **Exige plano Pro**; no Hobby, remova essa linha (as reservas também expiram sozinhas quando alguém tenta reservar ou o caixa busca o item, e no cron diário).
+   - `/api/cron/prazos` — opcional, a cada 15 min (Pix não pago e reservas não retiradas). **Exige plano Pro**: adicione `{ "path": "/api/cron/prazos", "schedule": "*/15 * * * *" }` em `vercel.json`. Sem ele as reservas expiram quando alguém tenta reservar, quando o caixa busca o item e no cron diário.
 4. Mercado Pago: em *Suas integrações → Webhooks*, cadastre `https://SEU-DOMINIO/api/pagamentos/webhook` (evento "Pagamentos") e copie a assinatura secreta para `MERCADOPAGO_WEBHOOK_SECRET`.
 5. WhatsApp Business: aprove o modelo de autenticação `codigo_verificacao` (pt_BR).
 6. Primeiro acesso: o e-mail listado em `GESTORES_INICIAIS` vira Gestor ao entrar. Para criar Atendentes, por enquanto: `update perfis set papel = 'atendente' where email = '...'` no SQL Editor do Neon.
