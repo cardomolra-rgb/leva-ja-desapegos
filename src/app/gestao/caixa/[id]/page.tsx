@@ -15,8 +15,7 @@ export const metadata = { title: "Cobrar" };
 export default async function CobrarItem({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!uuidValido(id)) notFound();
-  const { ctx } = await exigirEquipe();
-  const cfg = await lerConfig();
+  const [{ ctx }, cfg] = await Promise.all([exigirEquipe(), lerConfig()]);
   const r = await comoUsuario(ctx, async (db) => {
     const item = await uma<{
       id: string; codigo: string; titulo: string; status: string; preco_atual: number; preco_inicial: number; preco_minimo: number;

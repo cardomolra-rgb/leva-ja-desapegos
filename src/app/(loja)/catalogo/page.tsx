@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { after } from "next/server";
 import { obterSessao } from "@/lib/sessao";
 import { categorias, listarVitrine, type FiltrosCatalogo } from "@/lib/consultas";
 import { lerConfig } from "@/lib/config-loja";
@@ -30,12 +31,12 @@ export default async function Catalogo({ searchParams }: { searchParams: Params 
   ]);
 
   if (filtros.busca) {
-    // "busca sem resultado" alimenta o relatório de demanda não atendida
-    await comoUsuario(ctx, (db) =>
-      registrarEvento(db, itens.length ? "busca" : "busca_sem_resultado", {
-        perfilId: ctx.perfilId,
-        dados: { termo: filtros.busca, categoria: filtros.categoria ?? null, resultados: itens.length },
-      }),
+    // "busca sem resultado" alimenta o relatório de demanda não atendida — gravado depois da resposta
+    const termo = filtros.busca, categoria = filtros.categoria ?? null, resultados = itens.length;
+    after(() =>
+      comoUsuario(ctx, (db) =>
+        registrarEvento(db, resultados ? "busca" : "busca_sem_resultado", { perfilId: ctx.perfilId, dados: { termo, categoria, resultados } }),
+      ).catch(console.error),
     );
   }
 

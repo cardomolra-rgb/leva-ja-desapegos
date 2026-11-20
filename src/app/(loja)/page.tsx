@@ -8,8 +8,8 @@ import { ItemCard } from "@/components/ItemCard";
 export const dynamic = "force-dynamic";
 
 export default async function Inicio() {
-  const { ctx } = await obterSessao();
-  const [cfg, itens] = await Promise.all([lerConfig(), listarVitrine(ctx, { ordem: "recentes" }, 120)]);
+  const [{ ctx }, cfg] = await Promise.all([obterSessao(), lerConfig()]);
+  const itens = await listarVitrine(ctx, { ordem: "recentes" }, 120);
   const agora = new Date();
   const limite = somarDias(agora, 3);
   const comSituacao = itens

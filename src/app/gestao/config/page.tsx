@@ -13,7 +13,7 @@ const r = (c: number) => (c / 100).toFixed(2).replace(".", ",");
 const DIAS = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
 
 export default async function Configuracoes() {
-  const { ctx } = await exigirEquipe(true); // atendente não acessa
+  const { ctx } = await exigirEquipe(true); // atendente não acessa: confere antes de ler qualquer coisa
   const cfg = await lerConfig();
   const { cats, historico } = await comoUsuario(ctx, async (db) => ({
     cats: await varias<{ id: number; slug: string; nome: string; ativa: boolean; limite_itens: number }>(db, "select id, slug, nome, ativa, limite_itens from categorias order by ordem"),

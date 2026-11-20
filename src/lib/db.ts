@@ -1,5 +1,6 @@
 import "server-only";
 import { Pool, neonConfig, types, type PoolClient } from "@neondatabase/serverless";
+import { attachDatabasePool } from "@vercel/functions";
 
 // bigint (centavos) e numeric (percentuais) chegam como número, não string
 types.setTypeParser(20, (v: string) => Number(v));
@@ -33,16 +34,24 @@ export interface Contexto {
 }
 export type Db = PoolClient;
 
-function novoPool() {
+/**
+ * Um Pool por instância da função (Vercel Fluid compute), reaproveitado entre requisições:
+ * evita abrir uma conexão WebSocket nova a cada consulta. attachDatabasePool mantém a instância
+ * viva o suficiente para fechar as conexões ociosas com segurança.
+ * O Pool não guarda nada do usuário: perfil e papel vão em set_config(..., true), que vale só na transação.
+ */
+let pool: Pool | null = null;
+function obterPool() {
+  if (pool) return pool;
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error("DATABASE_URL não configurada");
-  return new Pool({ connectionString: url });
+  pool = new Pool({ connectionString: url, max: 5, idleTimeoutMillis: 5_000 });
+  attachDatabasePool(pool);
+  return pool;
 }
 
 async function emTransacao<T>(prep: (c: PoolClient) => Promise<void>, fn: (c: PoolClient) => Promise<T>): Promise<T> {
-  // Em ambiente serverless o Pool é criado e encerrado por requisição (recomendação do Neon)
-  const pool = novoPool();
-  const client = await pool.connect();
+  const client = await obterPool().connect();
   try {
     await client.query("begin");
     await prep(client);
@@ -54,7 +63,6 @@ async function emTransacao<T>(prep: (c: PoolClient) => Promise<void>, fn: (c: Po
     throw e;
   } finally {
     client.release();
-    await pool.end();
   }
 }
 

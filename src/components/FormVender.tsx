@@ -2,9 +2,10 @@
 import { useActionState, useMemo, useState } from "react";
 import { enviarPreAvaliacao } from "@/app/acoes/vender";
 import { InputImagem } from "@/components/InputImagem";
-import {
-  type Config, type Estado, ESTADOS, ESTADO_ROTULO, brl, paraCentavos, simularRecebimento, validarProposta,
-} from "@/lib/rules";
+import { type Config, type Estado, ESTADOS, ESTADO_ROTULO } from "@/lib/rules/config";
+import { brl, paraCentavos } from "@/lib/rules/dinheiro";
+import { validarProposta } from "@/lib/rules/regua";
+import { simularRecebimento } from "@/lib/rules/comissao";
 
 const ATALHOS: [string, string][] = [
   ["risco", "Risco"], ["mancha", "Mancha"], ["falta_peca", "Falta peça"], ["desgaste", "Desgaste"], ["trinca", "Trinca"], ["furo", "Furo"],

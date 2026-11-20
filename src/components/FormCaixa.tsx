@@ -1,7 +1,7 @@
 "use client";
 import { useActionState, useEffect, useState } from "react";
 import { finalizarVenda, gerarPixCaixa, type EstadoCaixa } from "@/app/acoes/gestao";
-import { brl, paraCentavos } from "@/lib/rules";
+import { brl, paraCentavos } from "@/lib/rules/dinheiro";
 
 const METODOS: [string, string][] = [
   ["pix", "Pix"], ["cartao_credito", "Crédito"], ["cartao_debito", "Débito"], ["credito_loja", "Crédito na loja"], ["dinheiro", "Dinheiro"],

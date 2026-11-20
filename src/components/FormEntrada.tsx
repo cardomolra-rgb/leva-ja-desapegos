@@ -2,7 +2,9 @@
 import { useActionState, useMemo, useState } from "react";
 import { darEntrada } from "@/app/acoes/gestao";
 import { InputImagem } from "@/components/InputImagem";
-import { type Config, type Estado, ESTADOS, ESTADO_ROTULO, brl, calcularTeto, minimoMaximo, paraCentavos } from "@/lib/rules";
+import { type Config, type Estado, ESTADOS, ESTADO_ROTULO } from "@/lib/rules/config";
+import { brl, paraCentavos } from "@/lib/rules/dinheiro";
+import { calcularTeto, minimoMaximo } from "@/lib/rules/regua";
 
 const ANGULOS = ["Frente", "Verso", "Lateral", "Detalhe / etiqueta", "Defeito"];
 const DEFEITOS: [string, string][] = [["risco", "Risco"], ["mancha", "Mancha"], ["falta_peca", "Falta peça"], ["desgaste", "Desgaste"], ["trinca", "Trinca"], ["furo", "Furo"]];

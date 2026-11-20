@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { comoServico, comoUsuario, uma } from "@/lib/db";
 import { exigirEquipe } from "@/lib/sessao";
-import { lerConfig, mesclar } from "@/lib/config-loja";
+import { esquecerConfig, lerConfig, mesclar } from "@/lib/config-loja";
 import { avisar, registrarEvento } from "@/lib/eventos";
 import { salvarArquivo } from "@/lib/storage";
 import { gateway } from "@/lib/pagamentos";
@@ -79,12 +79,14 @@ export async function darEntrada(_: EstadoAcao, form: FormData): Promise<EstadoA
   const fotos = pares.map((x) => x.f);
   const angulos = pares.map((x) => x.angulo);
 
-  const cfg = await lerConfig();
-  const item = await comoUsuario(ctx, (db) =>
-    uma<{ status: string; preco_novo: number; slug: string; checklist: string[]; dono_id: string }>(
-      db, "select i.status, i.preco_novo, c.slug, c.checklist, i.dono_id from itens i join categorias c on c.id = i.categoria_id where i.id = $1", [itemId],
+  const [cfg, item] = await Promise.all([
+    lerConfig(),
+    comoUsuario(ctx, (db) =>
+      uma<{ status: string; preco_novo: number; slug: string; checklist: string[]; dono_id: string }>(
+        db, "select i.status, i.preco_novo, c.slug, c.checklist, i.dono_id from itens i join categorias c on c.id = i.categoria_id where i.id = $1", [itemId],
+      ),
     ),
-  );
+  ]);
   if (!item) return { erro: "Item não encontrado" };
   if (!["aguardando_entrega", "pre_avaliacao"].includes(item.status)) return { erro: "Item não está aguardando entrada." };
 
@@ -306,6 +308,7 @@ export async function salvarConfiguracoes(_: EstadoAcao, form: FormData): Promis
     }
     await registrarEvento(db, "config_alterada", { perfilId: perfil.id, dados: { motivo: form.get("motivo") } });
   });
+  esquecerConfig();
   revalidatePath("/", "layout");
   return { ok: "Configurações salvas. Valem a partir de agora (itens já na vitrine seguem o preço inicial/mínimo combinados)." };
 }

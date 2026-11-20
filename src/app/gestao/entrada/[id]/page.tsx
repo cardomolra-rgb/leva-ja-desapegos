@@ -14,8 +14,7 @@ import { decidirPreAvaliacao, recusarPresencial } from "@/app/acoes/gestao";
 export default async function AvaliarItem({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!uuidValido(id)) notFound();
-  const { ctx } = await exigirEquipe();
-  const cfg = await lerConfig();
+  const [{ ctx }, cfg] = await Promise.all([exigirEquipe(), lerConfig()]);
   const r = await comoUsuario(ctx, async (db) => {
     const item = await uma<{
       id: string; titulo: string; descricao: string | null; marca: string | null; medidas: string | null; status: string; estado: Estado;

@@ -37,12 +37,14 @@ export async function enviarPreAvaliacao(_: EstadoVender, form: FormData): Promi
   const entregaEm = entrega ? new Date(`${entrega}-03:00`) : null;
   if (entregaEm && (isNaN(entregaEm.getTime()) || entregaEm < new Date())) return { erro: "Escolha uma data de entrega futura." };
 
-  const cfg = await lerConfig();
-  const cat = await comoServico((db) =>
-    uma<{ id: number; ativa: boolean; limite_itens: number; ocupados: number; em_analise: number }>(
-      db, "select id, ativa, limite_itens, ocupados::int, em_analise::int from ocupacao_categorias where slug = $1", [categoria],
+  const [cfg, cat] = await Promise.all([
+    lerConfig(),
+    comoServico((db) =>
+      uma<{ id: number; ativa: boolean; limite_itens: number; ocupados: number; em_analise: number }>(
+        db, "select id, ativa, limite_itens, ocupados::int, em_analise::int from ocupacao_categorias where slug = $1", [categoria],
+      ),
     ),
-  );
+  ]);
   if (!cat || !cat.ativa) return { erro: "Esta categoria não está aceitando itens no momento." };
   // categoria cheia não aceita mais pré-avaliações
   if (cat.ocupados + cat.em_analise >= cat.limite_itens)

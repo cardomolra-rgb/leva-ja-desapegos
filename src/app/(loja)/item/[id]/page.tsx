@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { after } from "next/server";
 import Link from "next/link";
 import { obterSessao } from "@/lib/sessao";
 import { obterItem, uuidValido } from "@/lib/consultas";
@@ -15,12 +16,13 @@ export const dynamic = "force-dynamic";
 export default async function FichaItem({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!uuidValido(id)) notFound();
-  const { ctx, perfil } = await obterSessao();
-  const [cfg, r] = await Promise.all([lerConfig(), obterItem(ctx, id)]);
+  const [{ ctx, perfil }, cfg] = await Promise.all([obterSessao(), lerConfig()]);
+  const r = await obterItem(ctx, id);
   if (!r) notFound(); // o RLS já esconde itens fora da vitrine de quem não é dono nem equipe
   const { item, fotos, favorito } = r;
 
-  await comoUsuario(ctx, (db) => registrarEvento(db, "visualizacao", { perfilId: ctx.perfilId, itemId: id }));
+  // registra a visualização depois de responder: não atrasa a abertura da ficha
+  after(() => comoUsuario(ctx, (db) => registrarEvento(db, "visualizacao", { perfilId: ctx.perfilId, itemId: id })).catch(console.error));
 
   const agora = new Date();
   const s = item.entrada_vitrine_em
